@@ -1,2 +1,1 @@
-# Rakes-Project
-Repo for the hackathon for unl
+Backend for Raikes Hacks Calendar Project
