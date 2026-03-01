@@ -14,17 +14,17 @@ The Python Flask backend for the Syllabus to Calendar application. This service 
 * Google Generative AI (Gemini REST API)
 * Google Calendar API
 
-## Setup & Installation
+## Setup & Installation  
 
-1. **Clone the repository**
+1. **Clone the repository**  
 
-2. **Create and activate a virtual environment:**
+2. **Create and activate a virtual environment:**  
    \`\`\`bash
    python -m venv venv
    source venv/bin/activate  # On Windows use: venv\Scripts\activate
    \`\`\`
 
-3. **Install the required packages:**
+3. **Install the required packages:**  
    \`\`\`bash
    pip install flask flask-cors requests pymupdf
    \`\`\`
