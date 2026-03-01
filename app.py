@@ -1,12 +1,9 @@
 import base64
-import os
 import json
 from datetime import datetime
-from flask import Flask, request, jsonify
 import requests
-import fitz  # PyMuPDF
-
-from flask import Flask, request, jsonify, make_response
+import fitz
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -47,26 +44,20 @@ def upload():
             pdf_file.write(pdf_data)
 
         print(f"File received and verified with token: {access_token[:10]}...")
-        
         return jsonify({"message": "File uploaded successfully"}), 200
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+
 def convert_pdf_to_images(base64_pdf_string):
     """Converts the incoming base64 PDF into an array of base64 PNG images for Ollama."""
     pdf_data = base64.b64decode(base64_pdf_string)
 
-    # Open PDF directly from memory
     doc = fitz.open(stream=pdf_data, filetype="pdf")
     base64_images = []
 
-    # FIX: Processing only the first page at 72 DPI with a white background
-    # to prevent memory swapping and token explosion.
     for page in doc[:1]:
-        # alpha=False forces a white background, preventing black squares
         pix = page.get_pixmap(dpi=72, alpha=False)
         img_bytes = pix.tobytes("png")
         base64_string = base64.b64encode(img_bytes).decode('utf-8')
@@ -74,19 +65,23 @@ def convert_pdf_to_images(base64_pdf_string):
 
     return base64_images
 
+
 @app.route('/create-invite', methods=['POST'])
 def create_invite():
     data = request.json
     auth_header = request.headers.get('Authorization')
 
-    if not auth_header:
-        return jsonify({"error": "Missing Authorization header"}), 401
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Unauthorized: No token found or invalid format"}), 401
 
-    if "file" not in data:
+    if not data or "file" not in data:
         return jsonify({"error": "No file provided in JSON payload"}), 400
 
     print("Converting PDF to images...")
-    base64_images = convert_pdf_to_images(data.get("file"))
+    try:
+        base64_images = convert_pdf_to_images(data.get("file"))
+    except Exception as e:
+        return jsonify({"error": f"Failed to process PDF: {str(e)}"}), 500
 
     print("Sending to Ollama (This should take ~15-30 seconds)...")
     ai_response_string = generate_event(base64_images)
@@ -101,7 +96,6 @@ def create_invite():
 
     print("Parsed Events:", events_array)
 
-    # Loop through the array and hit the Google API for each event
     google_calendar_endpoint = 'https://www.googleapis.com/calendar/v3/calendars/primary/events'
     headers = {
         'Authorization': auth_header,
@@ -112,16 +106,20 @@ def create_invite():
     for event_data in events_array:
         try:
             response = requests.post(google_calendar_endpoint, headers=headers, json=event_data)
-            response_data = response.json()
+            try:
+                response_data = response.json()
+            except ValueError:
+                response_data = {"raw_error": response.text}
 
             if response.status_code == 200:
-                results.append({"status": "success", "link": response_data.get('htmlLink')})
+                results.append({"status": "success", "link": response_data.get('htmlLink', 'No link provided')})
             else:
                 results.append({"status": "failed", "error": response_data})
         except Exception as e:
             results.append({"status": "failed", "error": str(e)})
 
     return jsonify({"processed_events": results}), 200
+
 
 def generate_event(base64_images):
     current_context = datetime.now().strftime("%A, %B %d, %Y")
@@ -165,6 +163,7 @@ The output MUST perfectly match this schema for every object in the array:
 """
     return query_ollama(prompt, base64_images)
 
+
 def query_ollama(prompt, base64_images):
     url = "http://localhost:11434/api/generate"
 
@@ -174,13 +173,11 @@ def query_ollama(prompt, base64_images):
         "images": base64_images,
         "stream": False,
         "format": "json",
-        "options": {
-            "num_ctx": 4096  # Locks memory usage so your computer doesn't crash
-        }
     }
 
     response = requests.post(url, json=payload)
     return response.json().get("response", "[]")
 
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
