@@ -8,7 +8,7 @@ The Python Flask backend for the Syllabus to Calendar application. This service 
 * **Dynamic Filtering:** Dynamically injects user-selected filters (like ignoring exams or office hours) into the AI prompt.
 * **Google Calendar Automation:** Authenticates using the user's frontend Bearer token to automatically populate their primary calendar with formatted events and recurrence rules.
 
-## Tech Stack
+## Required Components
 * Python 3.x
 * Flask & Flask-CORS
 * Google Generative AI (Gemini REST API)
