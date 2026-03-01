@@ -65,3 +65,4 @@ yarn-error.log
 *.bak
 *.tmp
 .cache/
+syllabus.pdf
