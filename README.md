@@ -19,12 +19,12 @@ The Python Flask backend for the Syllabus to Calendar application. This service 
 1. **Clone the repository**  
 
 2. **Create and activate a virtual environment:**  
-   \`\`\`bash
+   ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows use: venv\Scripts\activate
-   \`\`\`
+   ```
 
 3. **Install the required packages:**  
-   \`\`\`bash
+   ```bash
    pip install flask flask-cors requests pymupdf
-   \`\`\`
+   ```
