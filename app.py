@@ -2,8 +2,17 @@ import base64
 import os
 
 from flask import Flask, request
+from flask_cors import CORS
 from google.oauth2.credentials import Credentials
 app = Flask(__name__)
+
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 @app.route('/login')
 def login():
