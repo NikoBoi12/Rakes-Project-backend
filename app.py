@@ -20,16 +20,6 @@ CORS(app, resources={
 }, supports_credentials=True)
 
 
-@app.route('/login')
-def login():
-    return "Login Page"
-
-
-@app.route('/home')
-def home():
-    return "Home Page"
-
-
 @app.post('/test')
 def upload():
     auth_header = request.headers.get('Authorization')
@@ -175,7 +165,6 @@ def create_invite():
         print(f"Gemini Error: {e}")
         return jsonify({"error": "AI processing failed", "details": str(e)}), 500
 
-    # --- Google Calendar Integration ---
     gc_endpoint = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
     headers = {"Authorization": auth_header, "Content-Type": "application/json"}
     final_results = []
