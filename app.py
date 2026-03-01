@@ -19,6 +19,13 @@ CORS(app, resources={
     }
 }, supports_credentials=True)
 
+FILTER_RULES = {
+    "no_office_hours": "- Do NOT include any office hours events.",
+    "no_class_times":  "- Do NOT include any recurring class/lecture/recitation/lab meeting times.",
+    "no_exams":        "- Do NOT include any exams, quizzes, midterms, or finals.",
+    "no_assignments":  "- Do NOT include any assignments, labs, prelabs, homework, or project deadlines.",
+}
+
 
 @app.post('/test')
 def upload():
@@ -46,6 +53,28 @@ def upload():
         return jsonify({"error": str(e)}), 500
 
 
+def build_filter_block(filters: list) -> str:
+    if not filters:
+        return ""
+
+    rules = []
+    unknown = []
+
+    for f in filters:
+        if f in FILTER_RULES:
+            rules.append(FILTER_RULES[f])
+        else:
+            unknown.append(f)
+
+    if unknown:
+        print(f"Warning: Unknown filters ignored: {unknown}")
+
+    if not rules:
+        return ""
+
+    return "\n        Filter Rules (STRICTLY follow these):\n        " + "\n        ".join(rules)
+
+
 def call_gemini(prompt: str, pdf_bytes: bytes) -> list:
     payload = {
         "contents": [
@@ -69,10 +98,10 @@ def call_gemini(prompt: str, pdf_bytes: bytes) -> list:
                     "type": "OBJECT",
                     "required": ["summary", "start", "end"],
                     "properties": {
-                        "summary":     {"type": "STRING"},
-                        "location":    {"type": "STRING"},
+                        "summary":    {"type": "STRING"},
+                        "location":   {"type": "STRING"},
                         "description": {"type": "STRING"},
-                        "recurrence":  {
+                        "recurrence": {
                             "type": "ARRAY",
                             "items": {"type": "STRING"}
                         },
@@ -122,15 +151,23 @@ def create_invite():
     data = request.json
     auth_header = request.headers.get('Authorization')
 
+    print("Running")
+
     if not auth_header or not auth_header.startswith("Bearer "):
         return jsonify({"error": "Unauthorized: No token found or invalid format"}), 401
 
     if not data or "file" not in data:
         return jsonify({"error": "No file provided in JSON payload"}), 400
 
+    # Parse filters — optional field, defaults to empty list
+    filters = data.get("filters", [])
+    if not isinstance(filters, list):
+        return jsonify({"error": "'filters' must be an array of strings"}), 400
+
     try:
         pdf_bytes = base64.b64decode(data["file"])
         current_context = datetime.now().strftime("%A, %B %d, %Y")
+        filter_block = build_filter_block(filters)
 
         prompt = f"""
         Extract all scheduled events, classes, and deadlines from this syllabus.
@@ -152,6 +189,7 @@ def create_invite():
         - Use the last date found in the syllabus as the UNTIL date in all recurrence rules.
         - For recurring events, set the start date to the FIRST occurrence found in the syllabus.
         - Add a "recurrence" field as an array, e.g: ["RRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20261211T000000Z"]
+        {filter_block}
         """
 
         events_array = call_gemini(prompt, pdf_bytes)
