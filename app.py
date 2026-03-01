@@ -3,12 +3,10 @@ import json
 import os
 from datetime import datetime
 import requests
-import fitz
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-# --- SETUP ---
-API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyCMXhCyvSEbdqgnClkDDKIaKWq9MJfpvCA")
+API_KEY = os.environ.get("GEMINI_API_KEY", os.environ.get('GEMINI_API_KEY'))
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
 
 app = Flask(__name__)
