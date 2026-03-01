@@ -16,9 +16,9 @@ The Python Flask backend for the Syllabus to Calendar application. This service 
 
 ## Setup & Installation
 
-1. **Clone the repository:**
+1. **Clone the repository**
 
-2. **Create and activate a virtual environment (Recommended):**
+2. **Create and activate a virtual environment:**
    \`\`\`bash
    python -m venv venv
    source venv/bin/activate  # On Windows use: venv\Scripts\activate
